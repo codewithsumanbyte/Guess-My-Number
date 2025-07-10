@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Guess the Number</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+    }
+    body {
+      background: linear-gradient(-45deg, #74ebd5, #acb6e5, #f38181, #fce38a);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      padding: 10px;
+      transition: background 0.8s ease, color 0.8s ease;
+    }
+    .container, .leaderboard-box, .start-box, .name-box {
+      width: 100%;
+      max-width: 450px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      display: none;
+    }
+    .active { display: block !important; }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      margin-top: 10px;
+      width: 100%;
+    }
+    .footer-credit {
+      font-size: 10px;
+      text-align: center;
+      margin-top: auto;
+      margin-bottom: 5px;
+    }
+    @keyframes gradient {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+  </style>
+</head>
+<body>
+  <div class="start-box active" id="startBox">
+    <h2>🎮 Ready to play?</h2>
+    <button onclick="showNameBox()">Start Game</button>
+  </div>
+
+  <div class="name-box" id="nameBox">
+    <h2>Enter Your Name</h2>
+    <input type="text" id="playerName" placeholder="Your name">
+    <button onclick="startGame()">Continue</button>
+  </div>
+
+  <div class="container" id="gameBox">
+    <h1>🎯 Guess the Number (1-100)</h1>
+    <input type="number" id="guessInput" placeholder="Enter your guess" min="1" max="100">
+    <button onclick="checkGuess()">Submit Guess</button>
+    <div class="message" id="message"></div>
+    <button onclick="restartGame()" id="playAgainBtn" style="display:none; background-color:#f44336;">🔁 Play Again</button>
+    <button onclick="changeName()" id="changeNameBtn" style="display:none; background-color:#2196F3;">📝 Change Name</button>
+  </div>
+
+  <div class="leaderboard-box" id="leaderboardBox">
+    <h2>🏆 Leaderboard</h2>
+    <ul id="leaderboardList"></ul>
+  </div>
+
+  <div class="footer-credit">This game is developed by Suman Banerjee</div>
+
+  <script>
+    let number, attempts, guessHistory = [];
+    let leaderboard = JSON.parse(localStorage.getItem("leaderboardData")) || [];
+    let currentPlayer = "";
+
+    function showNameBox() {
+      document.getElementById("startBox").classList.remove("active");
+      document.getElementById("nameBox").classList.add("active");
+    }
+
+    function startGame() {
+      const name = document.getElementById("playerName").value.trim();
+      if (!name) return alert("Please enter your name.");
+      currentPlayer = name;
+      document.getElementById("nameBox").classList.remove("active");
+      document.getElementById("gameBox").classList.add("active");
+      resetGame();
+    }
+
+    function checkGuess() {
+      const userGuess = parseInt(document.getElementById("guessInput").value);
+      const message = document.getElementById("message");
+      if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
+        message.innerHTML = "❌ Please enter a number between 1 and 100.";
+        return;
+      }
+      attempts++;
+      guessHistory.push(userGuess);
+      if (userGuess < number) {
+        message.innerHTML = `📉 Too low! Guesses: ${guessHistory.join(", ")}`;
+      } else if (userGuess > number) {
+        message.innerHTML = `📈 Too high! Guesses: ${guessHistory.join(", ")}`;
+      } else {
+        message.innerHTML = `✅ Correct! <b>${number}</b> in <b>${attempts}</b> tries.`;
+        document.getElementById("playAgainBtn").style.display = "inline-block";
+        document.getElementById("changeNameBtn").style.display = "inline-block";
+        leaderboard.push({ name: currentPlayer, score: attempts });
+        localStorage.setItem("leaderboardData", JSON.stringify(leaderboard));
+        showLeaderboard();
+      }
+    }
+
+    function resetGame() {
+      number = Math.floor(Math.random() * 100) + 1;
+      attempts = 0;
+      guessHistory = [];
+      document.getElementById("guessInput").value = "";
+      document.getElementById("message").innerHTML = "";
+      document.getElementById("playAgainBtn").style.display = "none";
+      document.getElementById("changeNameBtn").style.display = "none";
+      document.getElementById("leaderboardBox").classList.remove("active");
+    }
+
+    function restartGame() {
+      resetGame();
+      document.getElementById("leaderboardBox").classList.remove("active");
+    }
+
+    function changeName() {
+      document.getElementById("gameBox").classList.remove("active");
+      document.getElementById("nameBox").classList.add("active");
+    }
+
+    function showLeaderboard() {
+      document.getElementById("leaderboardBox").classList.add("active");
+      const list = document.getElementById("leaderboardList");
+      list.innerHTML = "";
+      leaderboard.sort((a, b) => a.score - b.score);
+      leaderboard.slice(0, 10).forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = `${entry.name} - ${entry.score} attempts`;
+        list.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
